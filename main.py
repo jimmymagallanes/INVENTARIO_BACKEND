@@ -1,3 +1,8 @@
+from flask import Flask, render_template, request, url_for, flash, redirect, session
+from werkzeug.exceptions import abort
+import sqlite3
+
+
 from typing import Union
 
 from fastapi import FastAPI
@@ -10,7 +15,108 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import json
 
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'Esthefania_blog'
 
+#DB Conection
+def get_db_connection():
+    conn = sqlite3.connect('database.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+#Get ID from post_id
+def get_post(post_id):
+    conn = get_db_connection()
+    post = conn.execute('SELECT * FROM posts WHERE id = ?', (post_id,)).fetchone()
+    conn.close()
+
+    if post is None:
+        abort(404)
+
+    return post
+
+#Index
+@app.route("/")
+def index():
+    conn = get_db_connection()
+    posts = conn.execute('SELECT * FROM posts').fetchall()
+    conn.close()
+    return render_template('index.html', posts=posts)
+
+#See a specific post
+@app.route('/<int:post_id>')
+def post(post_id):
+    post = get_post(post_id)
+    return render_template('post.html', post=post)
+
+#Create a post
+@app.route('/create', methods=('GET', 'POST'))
+def create():
+    if request.method == 'POST':
+      title = request.form['title']
+      content = request.form['content']
+      tags = request.form['tags']
+      coments = request.form['coments']
+
+      if not title:
+          flash('TU PUBLICACIÓN DEBE TENER UN TÍTULO')
+      else:
+          conn = get_db_connection()
+          conn.execute('INSERT INTO posts(title, content, tags, coments) VALUES (?, ?, ?, ?)',
+                       (title, content, tags, coments))
+          conn.commit()
+          conn.close()
+          return redirect(url_for('index'))
+
+    return render_template('create.html')
+
+#Edit post
+@app.route('/<int:id>/edit', methods=('GET', 'POST'))
+def edit(id):
+    post = get_post(id)
+
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+
+        if not title:
+            flash('TU PUBLICACIÓN DEBE TENER UN TÍTULO')
+        else:
+            conn = get_db_connection()
+            conn.execute('UPDATE posts SET title = ?, content = ? WHERE id = ?', (title, content, id))
+            conn.commit()
+            conn.close()
+            return redirect(url_for('index'))
+
+    return render_template('edit.html', post=post)
+
+#Delete post
+@app.route('/<int:id>/delete', methods=('POST',))
+def delete(id):
+    post = get_post(id)
+    conn = get_db_connection()
+    conn.execute('DELETE FROM posts WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    flash('"{}" fue eliminado.'.format(post['title']))
+    return redirect(url_for('index'))
+
+#Error pages
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    return render_template('500.html'), 500
+
+#Credits
+@app.route("/credits")
+def credits():
+    return render_template('credits.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 app = FastAPI()
 
