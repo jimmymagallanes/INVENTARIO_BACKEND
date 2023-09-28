@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{%block content%}
+<h1>{% block title %} Crea un Nuevo Post {% endblock %}</h1>
+
+<form method="post">
+    <div class="form-group">
+        <label for="title">Nuevo Post</label>
+        <input type="text" name="title" placeholder="Titulo del Post" class="form-control" value="{{request.form['title']}}"></input>
+    </div>
+    <div class="form-group">
+        <label for="Content">Contenido del Post</label>
+        <textarea type="text" name="content" placeholder="Contenido del Post" class="form-control" >{{request.form['content']}}</textarea>
+    </div>
+    <div class="form-group">
+        <label for="Content">Etiquetas del Post</label>
+        <textarea type="text" name="tags" placeholder="Contenido del Post" class="form-control" >{{request.form['tags']}}</textarea>
+    </div>
+    <div class="form-group">
+        <label for="Content">Comentarios</label>
+        <textarea type="text" name="coments" placeholder="Contenido del Post" class="form-control" >{{request.form['coments']}}</textarea>
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Subir Post</button>
+    </div>
+</form>
+
+{% endblock %}
